@@ -1,0 +1,279 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARフォトスポット</title>
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #111;
+    font-family: sans-serif;
+  }
+
+  #stage {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .frame {
+    position: absolute;
+    inset: 16px;
+    border: 4px solid white;
+    border-radius: 20px;
+    pointer-events: none;
+  }
+
+  .title, .message {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 2px 8px black;
+    pointer-events: none;
+  }
+
+  .title {
+    top: 48px;
+    font-size: 24px;
+  }
+
+  .message {
+    bottom: 140px;
+    font-size: 21px;
+  }
+
+  #mascot {
+    position: absolute;
+    left: 50%;
+    top: 60%;
+    transform: translate(-50%, -50%);
+    font-size: min(25vw, 150px);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    text-shadow: 0 6px 12px #333;
+  }
+
+  .controls {
+    position: absolute;
+    bottom: 36px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  button, .save {
+    padding: 14px 22px;
+    border: none;
+    border-radius: 30px;
+    background: white;
+    color: #222;
+    font-size: 16px;
+    font-weight: bold;
+    text-decoration: none;
+  }
+
+  button:disabled { opacity: 0.5; }
+
+  #result {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: #111;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding: 16px;
+  }
+
+  #photo {
+    max-width: 100%;
+    max-height: 75%;
+    object-fit: contain;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="stage">
+  <video id="camera" autoplay muted playsinline></video>
+
+  <div class="frame"></div>
+  <div class="title">AR PHOTO SPOT</div>
+  <div class="message">思い出を撮ろう！</div>
+
+  <div id="mascot">🐢</div>
+
+  <div class="controls">
+    <button id="start">カメラを起動</button>
+    <button id="shoot" disabled>📸 撮影する</button>
+  </div>
+</div>
+
+<div id="result">
+  <img id="photo" alt="撮影した写真">
+  <a id="save" class="save" download="ar-photo.png">
+    写真を保存
+  </a>
+  <button id="back">もう一度撮影</button>
+</div>
+
+<script>
+const stage = document.getElementById("stage");
+const video = document.getElementById("camera");
+const mascot = document.getElementById("mascot");
+const result = document.getElementById("result");
+
+let pos = {x: 0.5, y: 0.6};
+let dragging = false;
+let photoURL = null;
+
+// カメラを起動
+document.getElementById("start").onclick = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {facingMode: {ideal: "environment"}},
+      audio: false
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    document.getElementById("start").hidden = true;
+    document.getElementById("shoot").disabled = false;
+  } catch (error) {
+    alert("カメラを起動できません。ブラウザの許可を確認してください。");
+  }
+};
+
+// キャラクターを指で移動
+function moveMascot(e) {
+  const rect = stage.getBoundingClientRect();
+
+  pos.x = Math.max(0.1, Math.min(0.9,
+    (e.clientX - rect.left) / rect.width));
+
+  pos.y = Math.max(0.15, Math.min(0.85,
+    (e.clientY - rect.top) / rect.height));
+
+  mascot.style.left = (pos.x * 100) + "%";
+  mascot.style.top = (pos.y * 100) + "%";
+}
+
+mascot.addEventListener("pointerdown", e => {
+  dragging = true;
+  mascot.setPointerCapture(e.pointerId);
+  moveMascot(e);
+});
+
+mascot.addEventListener("pointermove", e => {
+  if (dragging) moveMascot(e);
+});
+
+mascot.addEventListener("pointerup", () => {
+  dragging = false;
+});
+
+mascot.addEventListener("pointercancel", () => {
+  dragging = false;
+});
+
+// 写真を撮影
+document.getElementById("shoot").onclick = () => {
+  if (!video.videoWidth) return;
+
+  const w = stage.clientWidth;
+  const h = stage.clientHeight;
+
+  const canvas = document.createElement("canvas");
+  const scale = Math.min(2, 1600 / w);
+
+  canvas.width = Math.round(w * scale);
+  canvas.height = Math.round(h * scale);
+
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+
+  // カメラ映像を画面と同じ比率で描画
+  const zoom = Math.max(
+    w / video.videoWidth,
+    h / video.videoHeight
+  );
+
+  const sw = w / zoom;
+  const sh = h / zoom;
+
+  ctx.drawImage(
+    video,
+    (video.videoWidth - sw) / 2,
+    (video.videoHeight - sh) / 2,
+    sw, sh,
+    0, 0, w, h
+  );
+
+  // フレームを合成
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(18, 18, w - 36, h - 36);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.fillStyle = "white";
+  ctx.shadowColor = "black";
+  ctx.shadowBlur = 8;
+
+  ctx.font = "bold 24px sans-serif";
+  ctx.fillText("AR PHOTO SPOT", w / 2, 62);
+
+  ctx.font = "bold 21px sans-serif";
+  ctx.fillText("思い出を撮ろう！", w / 2, h - 150);
+
+  // キャラクターを写真に合成
+  ctx.font =
+    `${Math.min(w * 0.25, 150)}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+
+  ctx.fillText("🐢", pos.x * w, pos.y * h);
+
+  // PNG画像を生成
+  canvas.toBlob(blob => {
+    if (!blob) {
+      alert("写真を作成できませんでした。");
+      return;
+    }
+
+    if (photoURL) URL.revokeObjectURL(photoURL);
+
+    photoURL = URL.createObjectURL(blob);
+
+    document.getElementById("photo").src = photoURL;
+    document.getElementById("save").href = photoURL;
+    result.style.display = "flex";
+  }, "image/png");
+};
+
+// 再撮影
+document.getElementById("back").onclick = () => {
+  result.style.display = "none";
+};
+</script>
+
+</body>
+</html>
