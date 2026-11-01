@@ -1,0 +1,105 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0">
+
+  <title>3D ARフォトスポット</title>
+
+  <!-- AR対応3Dビューア -->
+  <script type="module"
+    src="https://unpkg.com/@google/model-viewer@4.4.0/dist/model-viewer.min.js">
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f0f7ff;
+      text-align: center;
+      color: #183153;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 20px 10px;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 65vh;
+      background: #dceeff;
+    }
+
+    button[slot="ar-button"] {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 16px 22px;
+      border: none;
+      border-radius: 30px;
+      background: #007bff;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    p {
+      padding: 0 15px;
+      line-height: 1.7;
+    }
+
+    small {
+      display: block;
+      padding: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>3D ARフォトスポット</h1>
+
+  <p>
+    キャラクターを現実の空間に置いてみよう！
+  </p>
+
+  <model-viewer
+    src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+
+    ios-src="https://modelviewer.dev/shared-assets/models/Astronaut.usdz"
+
+    alt="宇宙飛行士の3Dキャラクター"
+
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    ar-placement="floor"
+    ar-scale="auto"
+
+    camera-controls
+    shadow-intensity="1"
+    touch-action="pan-y">
+
+    <button slot="ar-button">
+      📱 現実空間に表示する
+    </button>
+
+  </model-viewer>
+
+  <p>
+    ARボタンを押して、スマホを床に向けてください。
+    3Dキャラクターが現れます。
+  </p>
+
+  <small>
+    3D model: Astronaut by Poly,
+    licensed under CC BY 2.0
+  </small>
+
+</body>
+</html>
