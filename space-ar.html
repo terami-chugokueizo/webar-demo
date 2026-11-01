@@ -69,17 +69,13 @@
     キャラクターを現実の空間に置いてみよう！
   </p>
 
-  <model-viewer
-    src="./mascot.glb"
-
-    alt="宇宙飛行士の3Dキャラクター"
-
-    ar
-    ar-modes="webxr scene-viewer quick-look"
-    ar-placement="floor"
-    ar-scale="auto"
-
-    camera-controls
+<model-viewer
+  src="./mascot.glb"
+  ios-src="./mascot.usdz"
+  ar
+  ar-modes="webxr scene-viewer quick-look"
+  ar-placement="floor"
+  camera-controls>
     shadow-intensity="1"
     touch-action="pan-y">
 
