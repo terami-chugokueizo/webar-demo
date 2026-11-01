@@ -1,99 +1,156 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102b46">
   <title>3D ARフォトスポット</title>
-
-  <!-- AR対応3Dビューア -->
-  <script type="module"
-    src="https://unpkg.com/@google/model-viewer@4.4.0/dist/model-viewer.min.js">
-  </script>
-
+  <!-- Model Viewer 4.4.0: iPhone Quick Look / Android WebXR / Scene Viewer -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js"></script>
   <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #f0f7ff;
-      text-align: center;
-      color: #183153;
-    }
-
-    h1 {
-      font-size: 24px;
-      margin: 20px 10px;
-    }
-
-    model-viewer {
-      width: 100%;
-      height: 65vh;
-      background: #dceeff;
-    }
-
-    button[slot="ar-button"] {
-      position: absolute;
-      bottom: 25px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 16px 22px;
-      border: none;
-      border-radius: 30px;
-      background: #007bff;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-
-    p {
-      padding: 0 15px;
-      line-height: 1.7;
-    }
-
-    small {
-      display: block;
-      padding: 12px;
-    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; background: #f3f7fb; color: #173049; }
+    header { background: #102b46; color: white; text-align: center; padding: 22px 16px 18px; }
+    h1 { margin: 0; font-size: clamp(21px, 5vw, 29px); }
+    header p { margin: 7px 0 0; color: #d0e4f5; font-size: 14px; }
+    main { max-width: 720px; margin: auto; padding: 12px 12px 30px; }
+    .viewer-wrap { position: relative; overflow: hidden; border-radius: 18px; background: linear-gradient(150deg, #e6f5ff, #ffffff); box-shadow: 0 3px 18px #17304912; }
+    model-viewer { display: block; width: 100%; height: min(59vh, 490px); min-height: 280px; background: transparent; }
+    /* AR button is outside the viewer so it remains visible in unsupported browsers. */
+    model-viewer::part(default-ar-button) { display: none; }
+    .controls { display: grid; gap: 10px; margin-top: 14px; }
+    button, a.action { display: flex; align-items: center; justify-content: center; border: 0; width: 100%; min-height: 54px; padding: 13px 16px; border-radius: 13px; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+    #launchAR { background: #0679e8; color: white; font-size: 17px; }
+    #androidDirect { background: #e3f0fc; color: #10558b; }
+    #copyURL { background: white; color: #173049; border: 1px solid #bdcedd; }
+    button:focus-visible, a.action:focus-visible { outline: 3px solid #ffad36; outline-offset: 3px; }
+    #status { padding: 14px; background: #fff; border-radius: 12px; line-height: 1.65; border: 1px solid #d4e1ec; margin: 12px 0; font-size: 14px; }
+    .help { background: #e8f2fa; padding: 15px; border-radius: 12px; line-height: 1.7; font-size: 14px; }
+    .help h2 { font-size: 16px; margin: 0 0 6px; }
+    .help p { margin: 0; }
+    .tips { padding: 10px 2px; font-size: 13px; line-height: 1.7; color: #486274; }
+    [hidden] { display: none !important; }
   </style>
 </head>
-
 <body>
+  <header>
+    <h1>3D ARフォトスポット</h1>
+    <p>キャラクターを現実の空間に置いてみよう！</p>
+  </header>
+  <main>
+    <div class="viewer-wrap">
+      <!-- mascot.glb must be in the same GitHub Pages folder as this HTML file. -->
+      <model-viewer
+        id="viewer"
+        src="./mascot.glb"
+        alt="ARフォトスポットの3Dキャラクター"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        ar-placement="floor"
+        ar-scale="auto"
+        camera-controls
+        loading="eager"
+        shadow-intensity="1"
+        exposure="1"
+        touch-action="pan-y">
+      </model-viewer>
+    </div>
+    <div class="controls">
+      <button id="launchAR" type="button">📱 現実空間で見る（AR）</button>
+      <a id="androidDirect" class="action" hidden>Android：別の方法でARを起動</a>
+      <button id="copyURL" type="button">🔗 このページのURLをコピー</button>
+    </div>
+    <p id="status" role="status" aria-live="polite">3Dキャラクターを読み込んでいます…</p>
+    <section class="help">
+      <h2>ARが開かないとき</h2>
+      <p id="helpText">iPhoneではSafari、AndroidではChromeでこのURLを開いてください。アプリ内ブラウザではAR機能が制限されることがあります。</p>
+    </section>
+    <p class="tips">3Dモデルは画面上で指を使って回転できます。AR対応端末では、ARボタンを押して床などの平面に配置できます。ARに非対応の場合でも3D表示は利用できます。</p>
+  </main>
+  <script>
+    const viewer = document.getElementById('viewer');
+    const statusBox = document.getElementById('status');
+    const helpText = document.getElementById('helpText');
+    const androidDirect = document.getElementById('androidDirect');
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/i.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(ua);
+    const isInApp = /Line\/|Instagram|FBAN|FBAV|FB_IAB|MicroMessenger|TikTok|GSA\/|KAKAOTALK|LinkedInApp/i.test(ua);
 
-  <h1>3D ARフォトスポット</h1>
+    function showHelp() {
+      if (isInApp) {
+        helpText.textContent = isIOS
+          ? '現在はアプリ内ブラウザの可能性があります。右上の「…」などから「Safariで開く」を選択してください。できない場合はURLをコピーしてSafariへ貼り付けてください。'
+          : '現在はアプリ内ブラウザの可能性があります。メニューから「Chromeで開く」を選択してください。できない場合はURLをコピーしてChromeへ貼り付けてください。';
+      } else if (isIOS) {
+        helpText.textContent = 'iPhone / iPadではSafariを推奨します。Quick Lookが使える対応ブラウザではARを起動できます。ARが開かない場合はSafariにURLを貼り付けてください。';
+      } else if (isAndroid) {
+        helpText.textContent = 'AndroidではChromeを推奨します。AR対応端末と最新のGoogle Play開発者サービス（AR）が必要です。通常のARボタンが使えない場合は「別の方法でARを起動」も試してください。';
+      } else {
+        helpText.textContent = 'この端末では3Dモデルを回転して確認できます。現実空間への配置にはAR対応スマートフォンが必要です。ページURLをスマホで開いてください。';
+      }
+    }
+    showHelp();
 
-  <p>
-    キャラクターを現実の空間に置いてみよう！
-  </p>
+    // Additional Android path: request Scene Viewer directly. Some in-app
+    // browsers block intent links; that behavior cannot be overridden by HTML.
+    if (isAndroid) {
+      const modelURL = new URL('./mascot.glb', location.href).href;
+      const params = 'file=' + encodeURIComponent(modelURL) +
+        '&mode=ar_preferred&title=' + encodeURIComponent('AR Photo Spot');
+      androidDirect.href = 'intent://arvr.google.com/scene-viewer/1.0?' + params +
+        '#Intent;scheme=https;package=com.google.android.googlequicksearchbox;' +
+        'action=android.intent.action.VIEW;S.browser_fallback_url=' +
+        encodeURIComponent(location.href) + ';end;';
+      androidDirect.hidden = false;
+    }
 
-<model-viewer
-  src="./mascot.glb"
-  ios-src="./mascot.usdz"
-  ar
-  ar-modes="webxr scene-viewer quick-look"
-  ar-placement="floor"
-  camera-controls>
-    shadow-intensity="1"
-    touch-action="pan-y">
+    viewer.addEventListener('load', () => {
+      statusBox.textContent = '3Dモデルを読み込みました。「現実空間で見る（AR）」を押してください。';
+    });
+    viewer.addEventListener('error', () => {
+      statusBox.textContent = '3Dモデルを読み込めませんでした。GitHubで mascot.glb と space-ar.html が同じ場所にあり、ファイル名が一致しているか確認してください。';
+    });
+    viewer.addEventListener('ar-status', (event) => {
+      if (event.detail?.status === 'failed') {
+        statusBox.textContent = 'ARを起動できませんでした。下の案内を確認し、Safari／Chromeまたは別の方法でお試しください。';
+      }
+    });
 
-    <button slot="ar-button">
-      📱 現実空間に表示する
-    </button>
+    document.getElementById('launchAR').addEventListener('click', () => {
+      if (typeof viewer.activateAR !== 'function') {
+        statusBox.textContent = 'ARライブラリの準備ができていません。通信状態を確認して再読み込みしてください。';
+        return;
+      }
+      if (!viewer.canActivateAR) {
+        statusBox.textContent = 'このブラウザではAR起動が利用できないか、準備中です。3D表示はそのまま使えます。下の案内を確認してください。';
+        showHelp();
+        return;
+      }
+      // Call directly from user gesture so Quick Look / Scene Viewer can start.
+      try {
+        const launch = viewer.activateAR();
+        if (launch && typeof launch.catch === 'function') {
+          launch.catch(() => {
+            statusBox.textContent = 'AR起動に失敗しました。ブラウザと端末の対応状況を確認してください。';
+          });
+        }
+      } catch (error) {
+        statusBox.textContent = 'ARを起動できませんでした。下の案内を確認してください。';
+      }
+    });
 
-  </model-viewer>
-
-  <p>
-    ARボタンを押して、スマホを床に向けてください。
-    3Dキャラクターが現れます。
-  </p>
-
-  <small>
-    3D model: Astronaut by Poly,
-    licensed under CC BY 2.0
-  </small>
-
+    document.getElementById('copyURL').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        statusBox.textContent = 'URLをコピーしました。SafariまたはChromeに貼り付けて開いてください。';
+      } catch (error) {
+        // Copy can be blocked in embedded browsers; show the URL for manual copy.
+        window.prompt('このURLをコピーしてください', location.href);
+      }
+    });
+  </script>
 </body>
 </html>
