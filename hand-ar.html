@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0b1221">
-  <title>手のひらARフォトスポット | HAND AR</title>
+  <title>手のひらARフォトスポット | HAND AR v1.1</title>
   <style>
     :root { color-scheme: dark; --ink:#f6f9ff; --soft:#c4d2e6; --cyan:#79e6ff; --gold:#ffe3aa; }
     * { box-sizing: border-box; }
@@ -93,10 +93,10 @@
 
     <section id="welcome" aria-label="開始画面">
       <div class="symbol">✋✨</div>
-      <h1>手のひらに<br>キャラクターが登場！</h1>
+      <h1>手のひらに<br>橋田選手が登場！</h1>
       <p>カメラで手のひらを映すと、3Dキャラクターが手の動きに合わせて現れます。写真も撮れます。</p>
       <button id="start" type="button">カメラを起動する</button>
-      <div id="notice">HTTPSのページでご利用ください。<br>カメラ映像は端末内で処理し、サーバーには保存しません。</div>
+      <div id="notice">修正版 v1.1｜HTTPSのページでご利用ください。<br>カメラ映像は端末内で処理し、サーバーには保存しません。</div>
       <div id="error" role="alert"></div>
     </section>
   </main>
@@ -113,13 +113,13 @@
   </section>
 
   <script type="module">
-    import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { HandLandmarker, FilesetResolver } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/vision_bundle.mjs';
+    // 読み込み失敗を画面に出せるよう、各ライブラリは起動時に動的に読み込む。
+    // 0.10.22 は正式リリースがなく、読み込めない可能性があるため、公開済み安定版に固定する。
+    let THREE, GLTFLoader, HandLandmarker, FilesetResolver;
 
     // お使いの3Dモデル。HTMLと同じフォルダに配置してください。
     const MODEL_URL = './hashida.glb';
-    const MP_VERSION = '0.10.22';
+    const MP_VERSION = '0.10.35';
     const HAND_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 
     const $ = (id) => document.getElementById(id);
@@ -151,6 +151,46 @@
       statusEl.classList.toggle('good', good);
     }
 
+    // 読み込みが終わらない場合でも、画面に説明を出して再試行できるようにする。
+    function timeout(promise, ms, label) {
+      let id;
+      const expired = new Promise((_, reject) => {
+        id = setTimeout(() => reject(new Error(
+          `${label}の読み込みが完了しませんでした。通信状態を確認し、SafariまたはChromeで開き直してください。`
+        )), ms);
+      });
+      return Promise.race([promise, expired]).finally(() => clearTimeout(id));
+    }
+
+    async function loadLibraries() {
+      setStatus('3D表示ライブラリを読み込み中');
+      let packages;
+      try {
+        packages = await timeout(Promise.all([
+          import('three'),
+          import('three/addons/loaders/GLTFLoader.js')
+        ]), 20000, '3D表示ライブラリ');
+      } catch (e) {
+        throw new Error('3D表示ライブラリを読み込めませんでした。通信環境やブラウザの制限を確認してください。 (' + (e?.message || e) + ')');
+      }
+      THREE = packages[0];
+      GLTFLoader = packages[1].GLTFLoader;
+
+      setStatus('手の認識ライブラリを読み込み中');
+      let mp;
+      try {
+        mp = await timeout(import(
+          `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/vision_bundle.mjs`
+        ), 20000, '手の認識ライブラリ');
+      } catch (e) {
+        throw new Error('手の認識ライブラリを読み込めませんでした。通信環境やブラウザの制限を確認してください。 (' + (e?.message || e) + ')');
+      }
+      ({ HandLandmarker, FilesetResolver } = mp);
+      if (!HandLandmarker || !FilesetResolver || !GLTFLoader) {
+        throw new Error('ARのプログラムを正しく読み込めませんでした。ページを再読み込みしてください。');
+      }
+    }
+
     async function openCamera(nextMode) {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('このブラウザではカメラを利用できません。SafariまたはChromeでHTTPSのURLを開いてください。');
@@ -167,7 +207,7 @@
       cameraStream = stream;
       video.srcObject = stream;
       video.classList.toggle('mirror', nextMode === 'user');
-      await video.play();
+      await timeout(video.play(), 15000, 'カメラ映像');
       mode = nextMode;
       lastVideoTime = -1;
       lastSeen = 0;
@@ -191,12 +231,12 @@
         minTrackingConfidence:0.5
       };
       try {
-        return await HandLandmarker.createFromOptions(files, opts);
+        return await timeout(HandLandmarker.createFromOptions(files, opts), 20000, 'GPUでの手の認識準備');
       } catch (gpuError) {
         console.warn('GPU認識を利用できないためCPUで再試行します', gpuError);
-        return await HandLandmarker.createFromOptions(files, {
+        return await timeout(HandLandmarker.createFromOptions(files, {
           ...opts, baseOptions:{ modelAssetPath:HAND_MODEL_URL, delegate:'CPU' }
-        });
+        }), 25000, 'CPUでの手の認識準備');
       }
     }
 
@@ -361,9 +401,13 @@
       errorEl.style.display = 'none';
       try {
         setStatus('カメラを起動しています');
-        await openCamera(mode);
-        setStatus('手の認識と3Dモデルを読み込み中');
-        const [tracker] = await Promise.all([prepareHandTracker(), prepareThree()]);
+        await timeout(openCamera(mode), 20000, 'カメラ');
+        await loadLibraries();
+        setStatus('手の認識モデルと3Dキャラクターを読み込み中');
+        const [tracker] = await Promise.all([
+          timeout(prepareHandTracker(), 55000, '手の認識モデル'),
+          timeout(prepareThree(), 30000, '3Dキャラクター')
+        ]);
         handTracker = tracker;
         welcome.style.display = 'none';
         controls.style.display = 'flex';
