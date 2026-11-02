@@ -35,22 +35,25 @@
 </head>
 <body>
   <header>
-    <h1>3D ARフォトスポット～橋田選手～</h1>
-    <p>橋田選手を現実の空間に置いてみよう！</p>
+    <h1>3D ARフォトスポット</h1>
+    <p>キャラクターを現実の空間に置いてみよう！</p>
   </header>
   <main>
     <div class="viewer-wrap">
-      <!-- mascot.glb must be in the same GitHub Pages folder as this HTML file. -->
+      <!-- hashida.glb must be in the same GitHub Pages folder as this HTML file. -->
       <model-viewer
         id="viewer"
         src="./hashida.glb"
-        alt="ARフォトスポットの3D橋田選手"
+        alt="ARフォトスポットの3Dキャラクター"
         ar
         ar-modes="webxr scene-viewer quick-look"
         ar-placement="floor"
         ar-scale="auto"
         camera-controls
         loading="eager"
+        shadow-intensity="1"
+        exposure="1"
+        touch-action="pan-y">
       </model-viewer>
     </div>
     <div class="controls">
@@ -94,7 +97,7 @@
     // Additional Android path: request Scene Viewer directly. Some in-app
     // browsers block intent links; that behavior cannot be overridden by HTML.
     if (isAndroid) {
-      const modelURL = new URL('./mascot.glb', location.href).href;
+      const modelURL = new URL('./hashida.glb', location.href).href;
       const params = 'file=' + encodeURIComponent(modelURL) +
         '&mode=ar_preferred&title=' + encodeURIComponent('AR Photo Spot');
       androidDirect.href = 'intent://arvr.google.com/scene-viewer/1.0?' + params +
@@ -108,7 +111,7 @@
       statusBox.textContent = '3Dモデルを読み込みました。「現実空間で見る（AR）」を押してください。';
     });
     viewer.addEventListener('error', () => {
-      statusBox.textContent = '3Dモデルを読み込めませんでした。GitHubで mascot.glb と space-ar.html が同じ場所にあり、ファイル名が一致しているか確認してください。';
+      statusBox.textContent = '3Dモデルを読み込めませんでした。GitHubで hashida.glb と space-ar.html が同じ場所にあり、ファイル名が一致しているか確認してください。';
     });
     viewer.addEventListener('ar-status', (event) => {
       if (event.detail?.status === 'failed') {
