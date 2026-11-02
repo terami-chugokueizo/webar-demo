@@ -93,7 +93,7 @@
 
     <section id="welcome" aria-label="開始画面">
       <div class="symbol">✋✨</div>
-      <h1>手のひらに<br>橋田選手が登場！</h1>
+      <h1>手のひらに<br>キャラクターが登場！</h1>
       <p>カメラで手のひらを映すと、3Dキャラクターが手の動きに合わせて現れます。写真も撮れます。</p>
       <button id="start" type="button">カメラを起動する</button>
       <div id="notice">修正版 v1.1｜HTTPSのページでご利用ください。<br>カメラ映像は端末内で処理し、サーバーには保存しません。</div>
@@ -265,7 +265,7 @@
         gltf = await loader.loadAsync(MODEL_URL);
       } catch (e) {
         console.error('GLB読み込みエラー', e);
-        throw new Error('mascot.glb を読み込めませんでした。hand-ar.html と mascot.glb を同じフォルダにアップロードしているか確認してください。');
+        throw new Error('hashida.glb を読み込めませんでした。hand-ar.html と hashida.glb を同じフォルダにアップロードしているか確認してください。');
       }
 
       const bounds = new THREE.Box3().setFromObject(gltf.scene);
@@ -274,7 +274,7 @@
       bounds.getSize(dim);
       bounds.getCenter(center);
       if (!Number.isFinite(dim.y) || dim.y < 0.0001) {
-        throw new Error('mascot.glb の高さを取得できませんでした。GLBの形状を確認してください。');
+        throw new Error('hashida.glb の高さを取得できませんでした。GLBの形状を確認してください。');
       }
       modelHeight = dim.y;
       // 足元を原点に、横方向の中心を手のひら中央に合わせる。
