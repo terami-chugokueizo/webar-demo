@@ -61,7 +61,7 @@
       <a id="androidDirect" class="action" hidden>Android：別の方法でARを起動</a>
       <button id="copyURL" type="button">🔗 このページのURLをコピー</button>
     </div>
-    <p id="status" role="status" aria-live="polite">選手を読み込んでいます…</p>
+    <p id="status" role="status" aria-live="polite">ARを読み込んでいます…</p>
     <section class="help">
       <h2>ARが開かないとき</h2>
       <p id="helpText">iPhoneではSafari、AndroidではChromeでこのURLを開いてください。アプリ内ブラウザではAR機能が制限されることがあります。</p>
@@ -108,10 +108,10 @@
     }
 
     viewer.addEventListener('load', () => {
-      statusBox.textContent = '選手を読み込みました。「現実空間で見る（AR）」を押してください。';
+      statusBox.textContent = 'ARを読み込みました。「現実空間で見る（AR）」を押してください。';
     });
     viewer.addEventListener('error', () => {
-      statusBox.textContent = '選手を読み込めませんでした。';
+      statusBox.textContent = 'ARを読み込めませんでした。';
     });
     viewer.addEventListener('ar-status', (event) => {
       if (event.detail?.status === 'failed') {
